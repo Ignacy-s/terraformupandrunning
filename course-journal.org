@@ -24,13 +24,136 @@ Don't see any.
 ** Setting environment variables with AWS access keys so Terraform can use AWS.
 # We don't want keys in bash history. After entering the secret you
 # need to press Ctrl-D to tell cat we've stopped writing.
-export AWS_ACCESS_KEY_ID="$(cat -)"
-export AWS_SECRET_ACCESS_KEY="$(cat -)"
+export AWS_ACCESS_KEY_ID="$(cat -)" \
+  && export AWS_SECRET_ACCESS_KEY="$(cat -)"
 
 ** Deploying a single server
-
 *** Choosing AWS region
 Chosen Stockholm (eu-north-1) because it's close and cheap. Read [[https://www.concurrencylabs.com/blog/choose-your-aws-region-wisely/][this article]] to learn about it.
+*** Choosing server AMI
+AMI is an image id in amazon AWS slang. AWS folks love three letter
+acronyms :)
+
+Used: EC2 console > Launch New Instance [[https://eu-north-1.console.aws.amazon.com/ec2/home?region=eu-north-1][(link)]]
+
+Example in book uses an Ubuntu Server image. Found this Ubuntu server:
+Ubuntu Server 22.04 LTS (HVM), SSD Volume Type
+ami-064087b8d355e9051 (64-bit (x86)) 
+*** Creating an ssh key pair for the terraform AWS role
+Option to create a new ssh key pair showed in Launch Instance
+wizard. It can probably be found in user security settings.
+Chosen ed25519 key.
+It is weird that I don't just upload my public key.
+*** Processing the .pem key file from AWS
+The .pem file of a ed25519 key is different than rsa, it is already in
+openSSH format.
+To get a private key out of it we use the '-y' option with ssh-keygen
+
+`ssh-keygen -y -f keyfile_openssh > keyfile.pub`
+*** Choosing between t2 and t3 instances
+When trying to create an instance manually, a t3 instance was chosen
+as default. Never heard of them and thought that world has moved on
+from t2 to t3. Book said t2, so maybe the book wasn't actual either.
+
+Short research showed that t3 is indeed the successor of t2. It has
+better performance to price ratio and better networking
+capabilities. T2 is still slightly cheaper, so going with t2, this
+time.
+
+Book advises checking things like that in Terraform Documentation.
+*** Creating an main.tf file
+provider "aws" {
+  region = "eu-north-1"
+}
+
+resource "aws_instance" "teruarc2-1" {
+  ami ="ami-064087b8d355e9051"
+  instance_type = "t2.nano"
+
+  credit_specification {
+    cpu_credits = "standard"
+  }
+}
+**** I've modified instance to nano, since I don't qualify for the free tier anymore.
+**** I've added credit_specification to make it a habit so I don't overpay for the t2/t3 instances. They have capacity to go into burst mode with extra CPU capacity, but if it happens too often it costs a lot more per hour. Standard mode makes sure they don't burst often enough to incur extra costs.
+*** `terraform init` command to prepare Terraform for action (it downloads provider's code)
+Terraform binary doesn't contain the code for any of the
+providers. When running terraform init, it scans the code and figures
+out what provider code to use. It then downloads that code so it could
+be used later.
+**** `init` creates a .terraform.lock.hcl file to record the provider selections it has made. This file should be included in version control, to make sure that same choices are made when running `init` with the same code on other machines.
+**** `init` has to be run each time the work is started with new Terraform code.
+**** `init` can be run multiple times (idempotent).
+*** `terraform plan` - is a dry-run command that lets you know what Terraform will do before making any changes.
+**** great way to sanity-check code
+**** similar to output of the `diff` command
+*** 'terraform apply' to build infrastructure based on the code in main.tf
+**** it runs terraform plan first anyway and asks for confirmation, so no need to really use 'terraform plan' other than sanity checking while writing code.
+*** error when creating instance - t2.nano is not a valid type.
+**** aws ec2 describe-instance-types --region eu-north-1
+
+This command will return a list of all the instance types available in the specified region, along with their specifications and pricing information.
+
+You can use this output to choose a proper instance type that meets the requirements of your Terraform plan, and update the Terraform configuration accordingly. In your case, since the error message indicates that the t2.nano instance type does not exist, you can use the output of the above command to choose an alternative instance type that is available in the eu-north-1 region and meets your requirements.
+
+Once you have updated the Terraform configuration, you can run the
+terraform plan command again to verify that the changes have resolved
+the error.
+
+There were no t2 instances, had to use t3.
+*** Adding name to an instance using 'tags'.
+provider "aws" {
+  region = "eu-north-1"
+}
+
+resource "aws_instance" "teruarc2-1" {
+  ami ="ami-064087b8d355e9051"
+  instance_type = "t3.nano"
+
+  tags = {
+    Name = "terraform-example"
+  }
+
+  credit_specification {
+    cpu_credits = "standard"
+  }
+}
+**** Note that Terraform doesn't destroy the currently active instance, but just modifies it.
+**** A name appears next to our instance in the instances list.
+**** Trying again, this time observing the console and measuring how much time does it take.
+**** I clicked something and the list refreshed. The instance refreshed with a new name.
+*** Created a .gitignore by copying one from another project and adding files to be ignored by terraform.
+#+BEGIN_SRC ruby
+
+# Emacs
+\#*\#
+*\~
+
+# Vagrant/Virtualbox files/logs
+*.log
+.vagrant/
+
+## Debugging files
+# DB dumpfiles used for debugging
+*.dump
+# Temporary files
+temp*
+# Script output files used for debugging
+*.out
+
+# Backup files
+*.bak.*
+
+# Certs
+acme.json
+
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.backup
+#+END_SRC
+**** In short, we stage the lock file, but ignore the *.tfstate* files and .terraform/ dir.
+
 ** Deploying a single web server
 ** Deploying a configurable web server
 ** Deploying a cluster of web servers

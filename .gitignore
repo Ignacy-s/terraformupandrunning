@@ -1,0 +1,26 @@
+# Emacs
+\#*\#
+*\~
+
+# Vagrant/Virtualbox files/logs
+*.log
+.vagrant/
+
+## Debugging files
+# DB dumpfiles used for debugging
+*.dump
+# Temporary files
+temp*
+# Script output files used for debugging
+*.out
+
+# Backup files
+*.bak.*
+
+# Certs
+acme.json
+
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.backup

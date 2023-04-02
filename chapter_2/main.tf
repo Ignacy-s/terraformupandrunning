@@ -3,6 +3,14 @@ provider "aws" {
 }
 
 resource "aws_instance" "teruarc2-1" {
-  ami =
-  instance_type = "t2.micro"
+  ami ="ami-064087b8d355e9051"
+  instance_type = "t3.nano"
+
+  tags = {
+    Name = "terraform-is-up"
+  }
+
+  credit_specification {
+    cpu_credits = "standard"
+  }
 }
