@@ -153,7 +153,12 @@ acme.json
 *.tfstate.backup
 #+END_SRC
 **** In short, we stage the lock file, but ignore the *.tfstate* files and .terraform/ dir.
-
+*** Created a github repository with the 'gh' command.
+gh repo create terraformupandrunning
+**** Added the repo as remote for the local git repo.
+git remote add origin git@github.com:Ignacy-s/terraformupandrunning.git
+**** Set the repo default remote repo, the -u option is what sets the upstream.
+git push -u origin master
 ** Deploying a single web server
 ** Deploying a configurable web server
 ** Deploying a cluster of web servers
