@@ -160,6 +160,57 @@ git remote add origin git@github.com:Ignacy-s/terraformupandrunning.git
 **** Set the repo default remote repo, the -u option is what sets the upstream.
 git push -u origin master
 ** Deploying a single web server
+We are creating the simplest possible web server that just replies
+with hello world to HTTP requests. Author of the book is using a super
+cool method I've never seen before. It's a bash script creating
+index.xhtml file with only Hello World inside it. And then it runs
+busybox to host it on port 8080. That's super interesting. I've met
+busybox before on a router. I didn't know it had so many options.
+
+
+#+BEGIN_SRC bash
+  user_data = <<-EOF
+              #!/bin/bash
+              echo "Hello, World" > index.html
+              nohup busybox httpd -f -p 8080 &
+              EOF
+
+  user_data_replace_on_change = true
+#+END_SRC
+*** Note that web server is wrapped in 'nohup' and an ampersand (&). This way it can keep running in the background while the bash script can exit.
+*** Port used is 8080 instead of default http port 80, this is because:
+**** Listening on ports under 1024 requires root privileges. A compromised server with root privileges gives an attacker a free hand on the server
+**** Because of the above, it's a best practice to run the server with a non-root user, which therefore has to listen on a higher port.
+**** An alternative, not mentioned in the book, is to use 'setcap' (available since kernel 2.2 from 1999) to allow web server to bind to privileged ports without giving it root privileges. This has the downside of allowing web server to bind on ALL privileged ports.
+*** Using "User Data" to pass the script to the instance. 
+**** Code:
+#+BEGIN_SRC terraform
+  resource "aws_instance" "teruarc2-1" {
+    ami ="ami-064087b8d355e9051"
+    instance_type = "t3.nano"
+
+    tags = {
+      Name = "terraform-is-up"
+    }
+
+    user_data = <<-EOF
+      #!/bin/bash
+      echo "Hello World!" > index.html
+      nohup busybox httpd -f -p 8080 &
+      EOF
+  
+    user_data_replace_on_change = true
+
+  ...
+  }
+#+END_SRC
+***** Note the Terraform's heredoc syntax that is similar to bash's
+****** Start: <<-EOF
+****** End: EOF
+***** Note the "user_data_replace_on_change". Terraform only updates the machine by default. Since User Data is executed only on the first boot, changing it might not have worked as expected, hence we force redeployment of the machine if User Data is changed.
+
+**** User Data - is a feature of AWS EC2 that allows users to run scripts or commands on instances after they are launched. It's a way to automate the configuration of instances after the boot. (Explained it here, because I found the name confusing).
+
 ** Deploying a configurable web server
 ** Deploying a cluster of web servers
 ** Deploying a load balancer
