@@ -208,10 +208,56 @@ busybox before on a router. I didn't know it had so many options.
 ****** Start: <<-EOF
 ****** End: EOF
 ***** Note the "user_data_replace_on_change". Terraform only updates the machine by default. Since User Data is executed only on the first boot, changing it might not have worked as expected, hence we force redeployment of the machine if User Data is changed.
-
 **** User Data - is a feature of AWS EC2 that allows users to run scripts or commands on instances after they are launched. It's a way to automate the configuration of instances after the boot. (Explained it here, because I found the name confusing).
 
 ** Deploying a configurable web server
 ** Deploying a cluster of web servers
 ** Deploying a load balancer
 ** Cleaning up
+
+
+
+
+* Extras:
+** Adding terraform dotfiles to Syncthing's .gitignore.
+Syncthing's .gitignore is not really called gitignore but .stignore.
+*** Asked GPT about which files to ignore. It's answer was nearly identical to what stood in Terraform docs (for files that shouldn't be versioned) with one caveat - it suggested to not sync the lock file. It might have been because of how I formed my prompt, comparing the situation of syncing terraform files with when syncing .vagrant dir between machines caused a lot of problems.
+*** The new .stignore file:
+#+BEGIN_SRC bash
+# Ignore Vagrant's data relevant only to the current machine
+.vagrant
+
+# Ignore .terraform directory
+.terraform/
+
+# Ignore Terraform state files
+terraform.tfstate
+terraform.tfstate.backup
+
+# Ignore the Terraform lock file
+.terraform.lock.hcl
+#+END_SRC
+
+** Committing only some changes to a file.
+*** Yes, it's possible both with command line git and with emacs magit.
+*** Source: GPT-4: is it possible to use magit or git to commit only some of modifications to a file?
+
+Yes, it is possible to commit only some modifications to a file using both Magit and Git.
+
+For Magit:
+
+    Open the Magit status buffer by typing M-x magit-status.
+    Navigate to the modified file in the status buffer.
+    Press TAB to expand the file's hunks (changes).
+    Move the cursor to the hunk you want to stage and press s to stage it. You can stage multiple hunks by repeating this step.
+    When you have staged the desired hunks, press c c to start a commit.
+    Write a commit message and press C-c C-c to finalize the commit.
+
+For Git command line:
+
+    Use git add -p or git add --patch. This command will allow you to interactively stage hunks from the modified file.
+    Git will show each hunk and ask if you want to stage it. Answer with y (yes), n (no), or other options based on your needs.
+    After you've staged the desired hunks, use git commit -m "Your commit message" to commit the staged changes.
+
+In both cases, you can commit only specific changes within a file, leaving the remaining modifications unstaged.
+
