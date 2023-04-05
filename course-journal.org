@@ -209,6 +209,57 @@ busybox before on a router. I didn't know it had so many options.
 ****** End: EOF
 ***** Note the "user_data_replace_on_change". Terraform only updates the machine by default. Since User Data is executed only on the first boot, changing it might not have worked as expected, hence we force redeployment of the machine if User Data is changed.
 **** User Data - is a feature of AWS EC2 that allows users to run scripts or commands on instances after they are launched. It's a way to automate the configuration of instances after the boot. (Explained it here, because I found the name confusing).
+*** Create a security group (so the instance can receive traffic)
+**** Code:
+#+BEGIN_SRC bash
+resource "aws_security_group" "instance" {
+  name = "terraform-example-instance"
+
+  ingress {
+    from_port = 8080
+    to_port = 8080
+    protocol = "tcp"
+    cidr_blocks =  ["0.0.0.0/0"]
+  }
+}
+#+END_SRC
+**** A security group is an equivalent of a firewall for AWS cloud instances. Traffic not allowed in the security group wont reach the instance.
+**** CIDR blocks specify IP address ranges in AWS EC2 security groups. They control access to instances by defining source/destination IP ranges for rules. Example: <your-ip-address>/32 allows access only from a single IP.
+**** CIDR block of 0.0.0.0/0 is a special block that includes all IP addresses.
+*** Terraform expressions - an expression in Terraform is anything that returns a value.
+**** 'literals' are the simplest form of an expression. For example a string "abc" or a number 50.
+**** 'reference' expression can access values from other parts of code.
+*** Using reference expression to get security group's id
+**** This is called a 'resource attribute reference' and can be found as such in the Terraform documentation.
+**** Syntax: <PROVIDER>_<TYPE>.<NAME>.<ATTRIBUTE>
+***** PROVIDER - aws, scaleway, gcp
+***** TYPE - type of a resource
+***** NAME - name we have given this resource
+***** ATTRIBUTE - either one of the arguments of that resource or one of the attributes exported by that resource (list for each resource can be found in documentation)
+***** Example usage: aws_security_group.instance.id
+**** Code:
+#+BEGIN_SRC terraform
+  resource "aws_instance" "teruarc2-2" {
+    ami ="ami-064087b8d355e9051"
+    instance_type = "t3.nano"
+    vpc_security_group_ids = [aws_security_group.instance.id]
+    tags = {
+      Name = "terraform-is-up"
+    }
+  ...
+#+END_SRC
+****  Note that the reference is enclosed in square brackets ("[" and "]"). This is not because a reference must be enclosed in square brackets, but because the vpc_security_group_ids attribute expects a list. In HCL (.hcl) files, including Terraform configuration files, square brackets are used to create a list.
+*** Dependencies in Terraform
+**** A reference from one resource to another creates an 'implicit dependency', which is later used by Terraform in creating the 'dependency graph'.
+**** After parsing the code for dependencies and building a 'dependency graph', Terraform knows which resources to create first.
+**** In our case, Terraform would know to create the security group before the instance.
+**** 'terraform graph' command will print a graph of dependencies in our code.
+*** Running 'terraform apply' - where we can see a new symbol and a new phrase
+**** '-/+' which is shown next to part of infrastructure that are to be replaced
+**** '# forces replacement' which marks the entry that caused the replacement
+**** This is an example of 'immutable infrastructure' paradigm.
+*** Testing server with 'curl http://IPADDRESS:8080' - server returns "Hello World!"
+
 
 ** Deploying a configurable web server
 ** Deploying a cluster of web servers
@@ -236,8 +287,7 @@ terraform.tfstate.backup
 
 # Ignore the Terraform lock file
 .terraform.lock.hcl
-#+END_SRC
-
+#+BEGIN_SRC bash
 ** Committing only some changes to a file.
 *** Yes, it's possible both with command line git and with emacs magit.
 *** Source: GPT-4: is it possible to use magit or git to commit only some of modifications to a file?
