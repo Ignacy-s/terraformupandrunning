@@ -270,14 +270,23 @@ resource "aws_security_group" "instance" {
                    print $3 }' )
   curl http://"${instance_ip}":8080
 #+END_SRC
-
 **** awk usage explained:
 ***** terraform show - prints data on all components of the current terraform project
 ***** awk '/public_ip / - starts awk and tells it to only grep lines containing "public_ip ". Note the space that is included in that string. Otherwise we also grep lines where public_ip is a part of a larger string.
 ***** gsub () - global substitution is a sed-like builtin function in awk
 ***** ( /"/, "", $3 ) - replaces all double quotes (/"/) with an empty string (""), in other words deletes them, in the third component of the grepped line ($3)
 ***** print $3 - prints the modified third component of the line
-
+*** AWS Network Security Interlude (what are AWS VPC and subnets)
+**** Each VPC is partitioned into one or more subnets, each with its own IP addresses
+***** In order to keep book examples simple, they use the default VPC and it's subnets
+***** All default subnets are *public subnets*, accessible from the public internet
+**** Running a server in a public subnet is a security risk
+***** It's fine for a quick experiment, when you are learning how to use the cloud
+***** The public internet is constantly scanned for vulnerable servers, and even a single vulnerability can be exploited by attackers to break into a server. It is crucial to ensure that all ports are properly protected and that all software running on the server is up-to-date with the latest security patches to prevent unauthorized access.
+**** Limiting the risk by keeping the production servers in private subnets
+***** At least database servers should be inaccessible from the public internet
+***** Deploying a reverse proxy or load balancer allow to hide all other infrastructure in private subnets
+***** Such load balancer/reverse proxy can then be hardened. Limiting it's purpose helps with the hardening.
 ** Deploying a configurable web server
 ** Deploying a cluster of web servers
 ** Deploying a load balancer
