@@ -259,7 +259,24 @@ resource "aws_security_group" "instance" {
 **** '# forces replacement' which marks the entry that caused the replacement
 **** This is an example of 'immutable infrastructure' paradigm.
 *** Testing server with 'curl http://IPADDRESS:8080' - server returns "Hello World!"
+**** Changing the Hello World reply to something else and trying once again.
+**** Code for bash one-liner to automatically curl the instance no-matter what's the new IP address
+#+BEGIN_SRC bash
+  # This code will pull the instances IP from terraform and then curl
+  # it.
+  instance_ip=$(terraform show \
+                   | awk '/public_ip / \
+                   { gsub ( /"/, "", $3 ) ; \
+                   print $3 }' )
+  curl http://"${instance_ip}":8080
+#+END_SRC
 
+**** awk usage explained:
+***** terraform show - prints data on all components of the current terraform project
+***** awk '/public_ip / - starts awk and tells it to only grep lines containing "public_ip ". Note the space that is included in that string. Otherwise we also grep lines where public_ip is a part of a larger string.
+***** gsub () - global substitution is a sed-like builtin function in awk
+***** ( /"/, "", $3 ) - replaces all double quotes (/"/) with an empty string (""), in other words deletes them, in the third component of the grepped line ($3)
+***** print $3 - prints the modified third component of the line
 
 ** Deploying a configurable web server
 ** Deploying a cluster of web servers

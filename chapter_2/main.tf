@@ -23,7 +23,7 @@ resource "aws_instance" "teruarc2-2" {
 
   user_data = <<-EOF
     #!/bin/bash
-    echo "Hello World!" > index.html
+    echo "It really works, my friend!" > index.html
     nohup busybox httpd -f -p 8080 &
     EOF
   
