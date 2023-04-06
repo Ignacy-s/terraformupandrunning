@@ -314,6 +314,28 @@ terraform.tfstate.backup
 # Ignore the Terraform lock file
 .terraform.lock.hcl
 #+BEGIN_SRC bash
+*** Sharing terraform.tfstate and .terraform.lock.hcl across machines poses certain risks if project changes were performed on both of the machines simultaneously. In my case, with just me accessing these files, there is hardly any risk.
+*** Deciding to synchronize the lock file and the state files.
+*** Newer .stignore file:
+#+BEGIN_SRC text
+# Ignore Vagrant's data relevant only to the current machine                             
+.vagrant
+
+# Ignore .terraform directory
+.terraform/
+
+# # Commenting this out to allow for syncing of the Terraform state
+# # across multiple machines.
+# # Ignore Terraform state files
+# terraform.tfstate
+# terraform.tfstate.backup
+# # Ignore the Terraform lock file
+# .terraform.lock.hcl
+#+END_SRC
+
+
+** TODO Configure Terraform to use an S3 bucket for state.
+
 ** Committing only some changes to a file.
 *** Yes, it's possible both with command line git and with emacs magit.
 *** Source: GPT-4: is it possible to use magit or git to commit only some of modifications to a file?
