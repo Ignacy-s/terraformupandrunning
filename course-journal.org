@@ -287,7 +287,151 @@ resource "aws_security_group" "instance" {
 ***** At least database servers should be inaccessible from the public internet
 ***** Deploying a reverse proxy or load balancer allow to hide all other infrastructure in private subnets
 ***** Such load balancer/reverse proxy can then be hardened. Limiting it's purpose helps with the hardening.
+
 ** Deploying a configurable web server
+*** Introduction to variables in Terraform
+**** Using variables keeps the code cleaner and easier to read.
+**** Being able to change value of a variable in one place ensures we don't create problems by forgetting to update the value in some place and not the other.
+**** 'input variables' syntax:
+#+BEGIN_SRC terraform
+  variable "NAME" {
+    [CONFIG ...]
+  }
+#+END_SRC
+**** Variable body can contain:
+***** description - documents the variable for others (and yourself)
+***** default - default value, to avoid prompting user for value if it's not set
+***** type - specifies the variable's data type (string, number, bool, etc.)
+***** validation - allows defining custom validation rules for variable values
+***** sensitive - marks the variable as sensitive, hiding its value from logs and output
+**** Variables can be set by:
+***** -var option - supplied on the command line when calling `terraform`
+****** example: `terraform apply -var boiling_eggs=true`
+***** -var-file option - a link to a file with values supplied on the command line when calling `terraform`
+****** example: `terraform apply -var-file secrets_file
+***** TF_VAR_<variable_name> - environment variables in the shell where `terraform` is run
+****** example: export TF_VAR_boiling_eggs=true
+***** prompting the user for value, if there is no default and the variable is not set any other place
+****** example: terraform asks you "Do you want 'boiling_eggs'?"
+**** Variable definition examples:
+***** A variable that only accepts numerical values:
+#+BEGIN_SRC terraform
+  variable "number_example" {
+    description = "An example of a number variable in Terraform"
+    type        = number
+    default     = 42
+  }
+#+END_SRC
+***** A variable that only accepts a list as it's value:
+#+BEGIN_SRC terraform
+  variable "list_example" {
+    description = "An example of a list in Terraform"
+    type        = list
+    default     = ["a", "b", "c"]
+  }
+#+END_SRC
+***** A variable that only accepts boolean values:
+#+BEGIN_SRC terraform
+  variable "bool_example" {
+    description = "An example of a boolean variable in Terraform"
+    type = bool
+    default = true
+  }
+#+END_SRC
+***** A variable that only accepts a map as its value:
+#+BEGIN_SRC terraform
+  variable "map_example" {
+    description = "An example of a map in Terraform"
+    type = map(string)
+    default = {
+      key1 = "value1"
+      key2 = "value2"
+    }
+  }
+#+END_SRC
+***** A variable with custom validation:
+#+BEGIN_SRC terraform
+  variable "validated_example" {
+    description = "An example of a variable with custom validation in Terraform"
+    type = string
+    default = "example"
+
+    validation {
+      condition     = length(var.validated_example) > 5
+      error_message = "The string must be at least 6 characters long."
+    }
+  }
+#+END_SRC
+***** Combined variable - a list input variable where all list items are numbers:
+#+BEGIN_SRC terraform
+  variable "list_of_numbers_example" {
+    description = "An example of a list of numbers in Terraform"
+    type = list(number)
+    default = [1, 2, 3, 4, 5]
+  }
+#+END_SRC
+***** Combined variable - a map that requires all of the values to be strings:
+#+BEGIN_SRC terraform
+  variable "map_of_strings_example" {
+    description = "An example of a map of strings in Terraform"
+    type = map(string)
+    default = {
+      key1 = "value1"
+      key2 = "value2"
+      key3 = "value3"
+    }
+  }
+#+END_SRC
+***** A structural type example using the object type:
+#+BEGIN_SRC terraform
+  variable "object_example" {
+    description = "An example of a structural type in Terraform"
+    type        = object({
+      name    = string
+      age     = number
+      tags    = list(string)
+      enabled = bool
+    })
+
+    default = {
+      name    = "value1"
+      age     =  42
+      tags    = ["a", "b", "c"]
+      enabled = true
+    }
+  }
+#+END_SRC
+***** A structural type for a database config:
+#+BEGIN_SRC terraform
+variable "database_config" {
+  description = "Configuration for the database"
+  type = object({
+    name = string
+    engine = string
+    port = number
+    replication = bool
+    replicas = list(string)
+  })
+
+  default = {
+    name = "my_database"
+    engine = "postgres"
+    port = 5432
+    replication = true
+    replicas = ["replica1", "replica2"]
+  }
+}
+#+END_SRC
+**** Setting a variable with a wrong type will result in Terraform signaling an error when running `terraform apply` with that variable.
+*** Creating a variable to store the port number:
+#+BEGIN_SRC terraform
+  variable "server_port" {
+    description = "The port the server will use for HTTP requests"
+    type        = number
+  }
+#+END_SRC
+
+
 ** Deploying a cluster of web servers
 ** Deploying a load balancer
 ** Cleaning up
