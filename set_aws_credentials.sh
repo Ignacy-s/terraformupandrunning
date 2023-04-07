@@ -10,15 +10,49 @@
 # journal.
 # Doesn't leak the credentials to the history.
 
-echo \
-"Did you remember to *source* this script instead of just running it?"
+usage(){
+  # Print script's usage.
+  cat <<EOF
+   Usage:
+     source ${0}
+   or
+     . ${0}
+EOF
+}
 
-read -rs -p "Enter AWS Access Key ID: " aws_access_key_id
-echo
-read -rs -p "Enter AWS Secret Access Key: " aws_secret_access_key
-echo
+main() {
+  # Print out some help if script is run with arguments.
+  if [[ $# -gt 0 ]]
+  then
+    if [[ "${1}" != "-h" ]] && [[ "${1}" != "--help" ]]
+    then
+      echo \
+        "This script doesn't take in arguments, it works interactively."
+    fi
+    usage
+    return 1
+  fi
 
-export AWS_ACCESS_KEY_ID="$aws_access_key_id"
-export AWS_SECRET_ACCESS_KEY="$aws_secret_access_key"
+  if [[ "$0" == "$BASH_SOURCE" ]]
+  then
+    echo "Script was run instead of being sourced."
+    echo \
+      "Remember to *source* this script instead of just running it."
+    usage
+    return 1
+  fi
 
-unset aws_access_key_id aws_secret_access_key
+  # Get the credentials from user without printing them on the screen.
+  read -rs -p "Enter AWS Access Key ID: " aws_access_key_id
+  echo
+  read -rs -p "Enter AWS Secret Access Key: " aws_secret_access_key
+  echo
+
+  export AWS_ACCESS_KEY_ID="$aws_access_key_id"
+  export AWS_SECRET_ACCESS_KEY="$aws_secret_access_key"
+
+  unset aws_access_key_id aws_secret_access_key
+}
+
+main "${@}"
+
