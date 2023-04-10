@@ -444,7 +444,114 @@ variable "database_config" {
     nohup busybox httpd -f -p ${var.server_port} &
     EOF
 #+END_SRC
-
+*** Introduction to output variables in Terraform
+**** Output variables provide a way to display data from your Terraform configuration.
+**** They can be used to display important information, such as IP addresses, user names, or other values you might need to share.
+**** 'output variables' syntax:
+#+BEGIN_SRC terraform
+output "NAME" {
+[CONFIG ...]
+}
+#+END_SRC
+**** Output body can contain:
+***** description - documents the output variable for others (and yourself)
+***** value - defines the value of the output variable
+***** sensitive - marks the output variable as sensitive, hiding its value from logs and output
+***** depends_on - list of resources that the output depends on, ensuring they are created before the output is computed
+**** Output variables are displayed after a successful terraform apply or can be displayed on demand using terraform output command.
+**** Output variable definition examples:
+***** A simple output variable:
+#+BEGIN_SRC terraform
+  output "simple_example" {
+    description = "An example of a simple output variable in Terraform"
+    value = "Hello, World!"
+  }
+#+END_SRC
+***** An output variable that displays an IP address:
+#+BEGIN_SRC terraform
+  output "ip_address" {
+    description = "The public IP address of the instance"
+    value = aws_instance.example.public_ip
+  }
+#+END_SRC
+***** An output variable marked as sensitive:
+#+BEGIN_SRC terraform
+  output "sensitive_example" {
+    description = "An example of a sensitive output variable in Terraform"
+    value = aws_security_group.example.id
+    sensitive = true
+  }
+#+END_SRC
+***** An output variable with depends_on:
+#+BEGIN_SRC terraform
+  output "depends_on_example" {
+    description = "An example of an output variable with depends_on in Terraform"
+    value = aws_eip.example.public_ip
+    depends_on = [aws_instance.example]
+  }
+#+END_SRC
+***** A list output variable:
+#+BEGIN_SRC terraform
+  output "list_example" {
+    description = "An example of a list output variable in Terraform"
+    value = aws_instance.example.*.public_ip
+  }
+#+END_SRC
+***** A map output variable:
+#+BEGIN_SRC terraform
+  output "map_example" {
+    description = "An example of a map output variable in Terraform"
+    value = {
+      instance_id = aws_instance.example.id
+      public_ip = aws_instance.example.public_ip
+    }
+  }
+#+END_SRC
+***** A structural type example using the object type:
+#+BEGIN_SRC terraform
+  output "object_example" {
+    description = "An example of a structural output type in Terraform"
+    value = {
+      instance_id = aws_instance.example.id
+      public_ip = aws_instance.example.public_ip
+      tags = aws_instance.example.tags
+    }
+  }
+#+END_SRC
+***** An output variable for a database config:
+#+BEGIN_SRC terraform
+  output "database_config" {
+    description = "Output for the database configuration"
+    value = {
+      name = var.database_config.name
+      engine = var.database_config.engine
+      port = var.database_config.port
+      replication = var.database_config.replication
+      replicas = var.database_config.replicas
+    }
+  }
+#+END_SRC
+**** If an output variable is marked as sensitive, its value will be hidden from logs and output, but can still be accessed by other Terraform configurations or modules using the terraform_remote_state data source.
+*** Using output variable to have terraform return server's public IP after running the terraform playbook
+**** Code:
+#+BEGIN_SRC terraform
+output "public_ip" {
+  value        = aws_instance.terurarc2-3.public_ip
+  description  = "The public IP address of the web server"
+}
+#+END_SRC
+**** Running `terraform apply` resulted in Terraform returning server's IP address at the end of the prompt.
+*** Using `terraform output` to list all outputs without applying changes:
+#+BEGIN_SRC bash
+$ terraform output
+public_ip = "16.16.91.66"
+#+END_SRC
+*** Using `terraform output <OUTPUT_NAME>` to see the value of a specific output called <OUTPUT_NAME>
+#+BEGIN_SRC bash
+$ terraform output public_ip
+"16.16.91.66"
+#+END_SRC
+**** This approach is especially useful for scripts and automation. By utilizing Terraform to set up the infrastructure and then using terraform output to retrieve specific values, you can seamlessly integrate with other tools that interact with the created infrastructure.
 
 ** Deploying a cluster of web servers
 ** Deploying a load balancer

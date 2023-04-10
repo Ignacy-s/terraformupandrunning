@@ -7,6 +7,12 @@ variable "server_port" {
   type        = number
   default     = 8080
 }
+
+output "public_ip" {
+  value        = aws_instance.teruarc2-3.public_ip
+  description  = "The public IP address of the web server"
+}
+
 resource "aws_security_group" "instance" {
   name = "terraform-example-instance"
 
@@ -18,7 +24,7 @@ resource "aws_security_group" "instance" {
   }
 }
 
-resource "aws_instance" "teruarc2-2" {
+resource "aws_instance" "teruarc2-3" {
   ami ="ami-064087b8d355e9051"
   instance_type = "t3.nano"
   vpc_security_group_ids = [aws_security_group.instance.id]
