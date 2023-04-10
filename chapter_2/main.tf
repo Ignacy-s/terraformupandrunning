@@ -8,10 +8,11 @@ variable "server_port" {
   default     = 8080
 }
 
-output "public_ip" {
-  value        = aws_instance.teruarc2-3.public_ip
-  description  = "The public IP address of the web server"
-}
+# This method of getting public ip doesn't work with ASG
+# output "public_ip" {
+#   value        = aws_autoscaling_group.example.public_ip
+#   description  = "The public IP address of the web server"
+# }
 
 resource "aws_security_group" "instance" {
   name = "terraform-example-instance"
@@ -24,24 +25,27 @@ resource "aws_security_group" "instance" {
   }
 }
 
-resource "aws_instance" "teruarc2-3" {
-  ami ="ami-064087b8d355e9051"
+resource "aws_launch_configuration" "examplenton" {
+  image_id ="ami-064087b8d355e9051"
   instance_type = "t3.nano"
-  vpc_security_group_ids = [aws_security_group.instance.id]
-  tags = {
-    Name = "terraform-is-up"
-  }
+  security_groups = [aws_security_group.instance.id]
 
   user_data = <<-EOF
     #!/bin/bash
     echo "It really works, my friend!" > index.html
     nohup busybox httpd -f -p ${var.server_port} &
     EOF
-  
-  user_data_replace_on_change = true
-
-  credit_specification {
-    cpu_credits = "standard"
-  }
 }
 
+resource "aws_autoscaling_group" "example" {
+  launch_configuration = aws_launch_configuration.examplenton.name
+
+  min_size = 2
+  max_size = 10
+
+  tag {
+    key                 = "Name"
+    value               = "terraform-asg-example"
+    propagate_at_launch = true
+  }
+}

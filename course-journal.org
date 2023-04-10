@@ -552,8 +552,60 @@ $ terraform output public_ip
 "16.16.91.66"
 #+END_SRC
 **** This approach is especially useful for scripts and automation. By utilizing Terraform to set up the infrastructure and then using terraform output to retrieve specific values, you can seamlessly integrate with other tools that interact with the created infrastructure.
-
 ** Deploying a cluster of web servers
+*** In real world usage, a single server is a single point of failure. To increase resiliency and availability we can run a cluster of servers instead. The concept of auto-scaling resources is not unique to AWS, but in this case this is the cloud provider we are using.
+*** ASG - AWS' Auto Scaling Group automates many tasks in auto-scaling cluster management:
+**** launching a cluster of EC2 Instances
+**** monitoring the health of each Instance
+**** replacing failed Instances
+**** adjusting the size of the cluster in response to load
+*** 'launch configuration' - specifies how to configure each EC2 Instance in the ASG
+**** 'aws_launch_configuration' resource is nearly identical to the 'aws_instance' resource
+***** but it doesn't support 'tags' and 'user_data_replace_on_change' parameter
+***** two parameters have different name:
+****** 'ami' becomes 'image_id'
+****** 'vpc_security_group' becomes 'security_groups'
+*** Modifying our main configuration file to use Auto Scaling Group instead of just one Instance
+**** Changing the 'aws_instance' to 'aws_launch_configuration'
+#+BEGIN_SRC diff
+ 
+-resource "aws_instance" "teruarc2-3" {
+-  ami ="ami-064087b8d355e9051"
++resource "aws_launch_configuration" "examplenton" {
++  image_id ="ami-064087b8d355e9051"
+   instance_type = "t3.nano"
+-  vpc_security_group_ids = [aws_security_group.instance.id]
+-  tags = {
+-    Name = "terraform-is-up"
+-  }
++  security_groups = [aws_security_group.instance.id]
+ 
+   user_data = <<-EOF
+     #!/bin/bash
+     echo "It really works, my friend!" > index.html
+     nohup busybox httpd -f -p ${var.server_port} &
+     EOF
+-  
+-  user_data_replace_on_change = true
+#+END_SRC
+**** Adding 'aws_autoscaling_group" resource
+#+BEGIN_SRC terraform
+  resource "aws_autoscaling_group" "example" {
+    launch_configuration =
+    aws_launch_configuration.examplenton.name
+
+    min_size = 2
+    max_size = 10
+
+    tag {
+      key                 = "Name"
+      value               = "terraform-asg-example"
+      propagate_at_launch = true
+    }
+  }
+#+END_SRC
+***** Note the launch_configuration name filled in as reference
+
 ** Deploying a load balancer
 ** Cleaning up
 
