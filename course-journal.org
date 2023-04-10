@@ -289,7 +289,7 @@ resource "aws_security_group" "instance" {
 ***** Such load balancer/reverse proxy can then be hardened. Limiting it's purpose helps with the hardening.
 
 ** Deploying a configurable web server
-*** Introduction to variables in Terraform
+*** Introduction to input variables in Terraform
 **** Using variables keeps the code cleaner and easier to read.
 **** Being able to change value of a variable in one place ensures we don't create problems by forgetting to update the value in some place and not the other.
 **** 'input variables' syntax:
@@ -429,6 +429,20 @@ variable "database_config" {
     description = "The port the server will use for HTTP requests"
     type        = number
   }
+#+END_SRC
+*** Running `terraform apply` to test how Terraform will react if the variable has not been set
+*** Variable reference - using our defined variables in the Terraform code
+**** Syntax: var.<VARIABLE_NAME>
+***** Example: to_port = var.server_port
+**** When used inside a string, use *interpolation*
+**** Interpolation syntax: "${ ... }"
+***** Example:
+#+BEGIN_SRC terraform
+  user_data = <<-EOF
+    #!/bin/bash
+    echo "It really works, my friend!" > index.html
+    nohup busybox httpd -f -p ${var.server_port} &
+    EOF
 #+END_SRC
 
 
