@@ -605,7 +605,20 @@ $ terraform output public_ip
   }
 #+END_SRC
 ***** Note the launch_configuration name filled in as reference
+*** Avoiding dependency hell when modifying launch configuration:
+**** Launch configurations are immutable, meaning you cannot modify them directly.
+**** When you change a launch configuration, Terraform will create a new one with the updated settings, which can cause issues if your ASG still references the old launch configuration.
+**** To avoid these issues, use the create_before_destroy lifecycle setting. With this setting enabled, Terraform will create the new launch configuration first, update the ASG to reference it, and then delete the old launch configuration, ensuring a smooth update process for your infrastructure.
+**** Adding lifecycle settings:
+#+BEGIN_SRC terraform
+  [... inside the launch configuration resource definition]
 
+  # Required when using a launch configuration with an auto scaling
+  # group.
+  lifecycle {
+    create_before_destroy = true
+  }
+  #+END_SRC
 ** Deploying a load balancer
 ** Cleaning up
 

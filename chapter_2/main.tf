@@ -35,6 +35,12 @@ resource "aws_launch_configuration" "examplenton" {
     echo "It really works, my friend!" > index.html
     nohup busybox httpd -f -p ${var.server_port} &
     EOF
+
+  # Required when using a launch configuration with an auto scaling
+  # group.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_autoscaling_group" "example" {
