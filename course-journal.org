@@ -619,11 +619,69 @@ $ terraform output public_ip
     create_before_destroy = true
   }
   #+END_SRC
+*** Introduction to 'data sources'
+**** A 'data source' is a piece of read-only information fetched from the provider every time Terraform is run
+**** Adding a data source to Terraform configuration does not change the described infrastructure
+**** Using a 'data source' is just a way to query provider's API for data and make it available to the rest of your Terraform code
+**** Examples of data that can be queried with 'data sources':
+***** VPC data
+***** subnet data
+***** AMI id's
+***** IP address ranges
+***** current user's identity
+***** [and many others]
+**** Syntax:
+#+BEGIN_SRC terraform
+  data "<PROVIDER>_<TYPE>" "<NAME>" {
+    [CONFIG ...]
+  }
+#+END_SRC
+***** PROVIDER: name of the provider (f.ex. aws)
+***** TYPE: type of data source (f.ex. vpc)
+***** NAME: identifier given to this data source to be used throughout the Terraform code
+***** CONFIG: one or more arguments specific to this data source
+**** Example:
+#+BEGIN_SRC terraform
+  data "aws_vpc" "default" {
+    default = true
+  }
+#+END_SRC
+***** Arguments in the body of the data source are usually search filters indicating what information you're looking for.
+***** 'default = true' tell Terraform to look for the default VPC in your AWS account. It's not connected to the name 'default' which was given by us to this data source.
+**** Getting data out of data source: 'data.<PROVIDER>_<TYPE>.<NAME>.<ATTRIBUTE>'
+***** Example: 'data.aws_vpc.default.id' to get the ID number of the VPC
+*** Using a data source to finish autoscaling group definition by automatically getting an AWS subnet ID.
+**** Define a subnet data source:
+#+BEGIN_SRC terraform
+data "aws_subnets" "default" {
+  filter {
+    name = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+#+END_SRC
+Note how we used the previously defined data source of vpc to get it's
+ID number.
+**** Pull the subnet IDs from the data source and pass them to the ASG definition
+#+BEGIN_SRC bash
+resource "aws_autoscaling_group" "example" {
+  launch_configuration = aws_launch_configuration.examplenton.name
+  vpc_zone_identifier  = data.aws_subnets.default.ids
+
+  min_size = 2
+  max_size = 10
+
+  tag {
+    key                 = "Name"
+    value               = "terraform-asg-example"
+    propagate_at_launch = true
+  }
+}
+#+END_SRC
+*** Running 'terraform apply' to stand up newly defined autoscaling group.
+It worked nicely.
 ** Deploying a load balancer
 ** Cleaning up
-
-
-
 
 * Extras:
 ** Adding terraform dotfiles to Syncthing's .gitignore.
